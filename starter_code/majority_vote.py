@@ -1,4 +1,4 @@
-from utils import *
+from starter_code.utils import *
 
 
 def main():

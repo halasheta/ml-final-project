@@ -1,4 +1,4 @@
-from utils import *
+from starter_code.utils import *
 from scipy.linalg import sqrtm
 
 import numpy as np

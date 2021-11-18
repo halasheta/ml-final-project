@@ -1,6 +1,5 @@
 from matplotlib import pyplot
 from sklearn.impute import KNNImputer
-from utils import *
 
 from starter_code.utils import sparse_matrix_evaluate, load_train_sparse, \
     load_valid_csv, load_public_test_csv
@@ -41,7 +40,23 @@ def knn_impute_by_item(matrix, valid_data, k):
     # TODO:                                                             #
     # Implement the function as described in the docstring.             #
     #####################################################################
-    acc = None
+    nbrs = KNNImputer(n_neighbors=k)
+    # We use NaN-Euclidean distance measure.
+    mat = nbrs.fit_transform(matrix.T)
+
+    # sparse matrix evaluate
+    total_prediction = 0
+    total_accurate = 0
+    for i in range(len(valid_data["is_correct"])):
+        cur_user_id = valid_data["user_id"][i]
+        cur_question_id = valid_data["question_id"][i]
+        if mat[cur_question_id, cur_user_id] >= 0.5 and valid_data["is_correct"][i]:
+            total_accurate += 1
+        if mat[cur_question_id, cur_user_id] < 0.5 and not valid_data["is_correct"][i]:
+            total_accurate += 1
+        total_prediction += 1
+    acc = total_accurate / float(total_prediction)
+    print("Validation Accuracy: {}".format(acc))
     #####################################################################
     #                       END OF YOUR CODE                            #
     #####################################################################
@@ -63,23 +78,26 @@ def main():
     best_accuracy = 0
     accuracies = []
     for k in ks:
-        # item_acc = knn_impute_by_item(sparse_matrix, val_data, k)
-        user_acc = knn_impute_by_user(sparse_matrix, val_data, k)
-        accuracies.append(user_acc)
-        # if item_acc > best_accuracy:
-        #    best_accuracy = item_acc
-        #    kstar = k
-        if user_acc > best_accuracy:
-            best_accuracy = user_acc
+        item_acc = knn_impute_by_item(sparse_matrix, val_data, k)
+        # user_acc = knn_impute_by_user(sparse_matrix, val_data, k)
+        accuracies.append(item_acc)
+        # accuracies.append(user_acc)
+        if item_acc > best_accuracy:
+            best_accuracy = item_acc
             kstar = k
+        # if user_acc > best_accuracy:
+        #     best_accuracy = user_acc
+        #     kstar = k
+
     pyplot.plot(ks, accuracies)
     print(kstar, best_accuracy)
     pyplot.title("A graph showing the accuracy with respect to k")
     pyplot.xlabel("k")
     pyplot.ylabel("Accuracy")
     pyplot.show()
+    # pyplot.savefig('user_based.png')
     print("Test accuracy: {}".
-          format(knn_impute_by_user(sparse_matrix, test_data, kstar)))
+          format(knn_impute_by_item(sparse_matrix, test_data, kstar)))
 
     # Compute the validation accuracy for each k. Then pick k* with     #
     # the best performance and report the test accuracy with the        #
