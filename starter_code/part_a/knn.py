@@ -78,10 +78,9 @@ def main():
     pyplot.xlabel("k")
     pyplot.ylabel("Accuracy")
     pyplot.show()
-    return knn_impute_by_user(sparse_matrix, test_data, kstar)
+    print("Test accuracy: {}".
+          format(knn_impute_by_user(sparse_matrix, test_data, kstar)))
 
-
-    # TODO:                                                             #
     # Compute the validation accuracy for each k. Then pick k* with     #
     # the best performance and report the test accuracy with the        #
     # chosen k*.                                                        #
@@ -92,4 +91,4 @@ def main():
 
 
 if __name__ == "__main__":
-    print(main())
+    main()
