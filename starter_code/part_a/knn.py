@@ -1,5 +1,9 @@
+from matplotlib import pyplot
 from sklearn.impute import KNNImputer
 from utils import *
+
+from starter_code.utils import sparse_matrix_evaluate, load_train_sparse, \
+    load_valid_csv, load_public_test_csv
 
 
 def knn_impute_by_user(matrix, valid_data, k):
@@ -53,18 +57,36 @@ def main():
     print(sparse_matrix)
     print("Shape of sparse matrix:")
     print(sparse_matrix.shape)
-
     #####################################################################
+    ks = [1, 6, 11, 16, 21, 26]
+    kstar = 0
+    best_accuracy = 0
+    accuracies = []
+    for k in ks:
+        # item_acc = knn_impute_by_item(sparse_matrix, val_data, k)
+        user_acc = knn_impute_by_user(sparse_matrix, val_data, k)
+        accuracies.append(user_acc)
+        # if item_acc > best_accuracy:
+        #    best_accuracy = item_acc
+        #    kstar = k
+        if user_acc > best_accuracy:
+            best_accuracy = user_acc
+            kstar = k
+    pyplot.plot(ks, accuracies)
+    pyplot.show()
+    print(kstar, best_accuracy)
+    return knn_impute_by_user(sparse_matrix, test_data, kstar)
+    # what is left is to plot/report results - nm
+
     # TODO:                                                             #
     # Compute the validation accuracy for each k. Then pick k* with     #
     # the best performance and report the test accuracy with the        #
     # chosen k*.                                                        #
     #####################################################################
-    pass
     #####################################################################
     #                       END OF YOUR CODE                            #
     #####################################################################
 
 
 if __name__ == "__main__":
-    main()
+    print(main())
