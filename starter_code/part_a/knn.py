@@ -73,10 +73,13 @@ def main():
             best_accuracy = user_acc
             kstar = k
     pyplot.plot(ks, accuracies)
-    pyplot.show()
     print(kstar, best_accuracy)
+    pyplot.title("A graph showing the accuracy with respect to k")
+    pyplot.xlabel("k")
+    pyplot.ylabel("Accuracy")
+    pyplot.show()
     return knn_impute_by_user(sparse_matrix, test_data, kstar)
-    # what is left is to plot/report results - nm
+
 
     # TODO:                                                             #
     # Compute the validation accuracy for each k. Then pick k* with     #
