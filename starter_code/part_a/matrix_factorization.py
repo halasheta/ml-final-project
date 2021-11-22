@@ -125,7 +125,15 @@ def main():
     # (SVD) Try out at least 5 different k and select the best k        #
     # using the validation set.                                         #
     #####################################################################
-    pass
+    print(len(train_matrix))
+
+    k = [1, 3, 5, 7, 9]
+    svd_matrices = []
+    losses = []
+    for i in range(len(k)):
+        svd_matrices.append(svd_reconstruct(train_matrix, k[i]))
+        losses.append(squared_error_loss(val_data, train_matrix, svd_matrices[i]))
+    print(losses)
     #####################################################################
     #                       END OF YOUR CODE                            #
     #####################################################################
