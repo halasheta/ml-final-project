@@ -1,6 +1,7 @@
 from starter_code.utils import *
 
 import numpy as np
+import scipy.special as sp
 
 
 def sigmoid(x):
@@ -24,7 +25,15 @@ def neg_log_likelihood(data, theta, beta):
     # TODO:                                                             #
     # Implement the function as described in the docstring.             #
     #####################################################################
-    log_lklihood = 0.
+    N, D = theta.shape[0], beta.shape[0]
+
+
+    vec = np.zeros((N, 1))
+    for i in range(N):
+        vec[i] = np.sum(np.log(np.exp(theta[i]) + np.exp(beta)))
+
+    # use indicator!! not D * theta
+    log_lklihood = np.sum(D * theta - vec)
     #####################################################################
     #                       END OF YOUR CODE                            #
     #####################################################################
@@ -52,7 +61,19 @@ def update_theta_beta(data, lr, theta, beta):
     # TODO:                                                             #
     # Implement the function as described in the docstring.             #
     #####################################################################
-    pass
+    num_iterations = 50
+    N, D = theta.shape[0], beta.shape[0]
+
+    # need to include the indicator somehow
+    for k in range(num_iterations):
+        dL_dtheta = 0
+        for i in range(N):
+            dL_dtheta += np.sum(np.exp(beta) / (np.exp(theta[i]) + np.exp(beta)))
+
+        dL_dbeta = 0
+        for j in range(D):
+            dL_dbeta += - np.exp(beta[j]) / (np.exp(theta) + np.exp(beta[j]))
+        theta = theta - lr * dL_dtheta
     #####################################################################
     #                       END OF YOUR CODE                            #
     #####################################################################
@@ -115,6 +136,13 @@ def main():
     val_data = load_valid_csv("../data")
     test_data = load_public_test_csv("../data")
 
+    theta = np.zeros((3, 1))
+    beta = np.zeros((2, 1))
+
+    theta[0], theta[1], theta[2] = 1, 1, 1
+    beta[0], beta[1] = 1, 2
+
+    print(neg_log_likelihood(train_data, theta, beta))
     #####################################################################
     # TODO:                                                             #
     # Tune learning rate and number of iterations. With the implemented #
