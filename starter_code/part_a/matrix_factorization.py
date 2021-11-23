@@ -40,6 +40,7 @@ def svd_reconstruct(matrix, k):
     # Reconstruct the matrix.
     reconst_matrix = np.dot(np.dot(Q, s_root), np.dot(s_root, Ut))
     reconst_matrix = reconst_matrix + mu
+
     return np.array(reconst_matrix)
 
 
@@ -74,12 +75,19 @@ def update_u_z(train_data, lr, u, z):
     # Implement the function as described in the docstring.             #
     #####################################################################
     # Randomly select a pair (user_id, question_id).
-    i = \
-        np.random.choice(len(train_data["question_id"]), 1)[0]
+    i = np.random.choice(len(train_data["question_id"]), 1)[0]
 
     c = train_data["is_correct"][i]
     n = train_data["user_id"][i]
     q = train_data["question_id"][i]
+
+    # fix z and derive wrt u
+    dL_du = -z[q].reshape(-1, 1) @ (c - (u[n].reshape(-1, 1).T @ z[q].reshape(-1, 1)))
+    u[n] -= lr * dL_du[0]
+
+    # fix u and derive wrt z
+    dL_dz = -u[n].reshape(-1, 1) @ (c - (u[n].reshape(-1, 1).T @ z[q].reshape(-1, 1)))
+    z[q] -= lr * dL_dz[0]
     #####################################################################
     #                       END OF YOUR CODE                            #
     #####################################################################
@@ -142,7 +150,7 @@ def main():
             if predictions[j] == val_data['is_correct'][j]:
                 correct += 1
         accuracies.append(correct / len(val_data['is_correct']))
-        # accuracies.append(np.sum(predictions == val_data['is_correct']) / len(val_data['is_correct']))
+
     print(accuracies)
 
     # Test for k*=9:
@@ -162,8 +170,6 @@ def main():
     test_acc = correct / len(test_data['is_correct'])
     print(test_acc)
 
-
-
     #####################################################################
     #                       END OF YOUR CODE                            #
     #####################################################################
@@ -171,9 +177,10 @@ def main():
     #####################################################################
     # TODO:                                                             #
     # (ALS) Try out at least 5 different k and select the best k        #
-    # using the validation set.                                         #
+    # using the validation set.
+
+    als(train_data, 9, 0.01, 10)
     #####################################################################
-    pass
     #####################################################################
     #                       END OF YOUR CODE                            #
     #####################################################################
