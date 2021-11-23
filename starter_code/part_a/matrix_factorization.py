@@ -125,15 +125,45 @@ def main():
     # (SVD) Try out at least 5 different k and select the best k        #
     # using the validation set.                                         #
     #####################################################################
-    print(len(train_matrix))
+    k_values = [1, 5, 7, 9, 11]
+    accuracies = []
+    for k in k_values:
+        predictions = []
+        curr_svd_matrix = svd_reconstruct(train_matrix, k)
+        for i in range(len(val_data['user_id'])):
+            curr_user_id = val_data['user_id'][i]
+            curr_ques_id = val_data['question_id'][i]
+            if curr_svd_matrix[curr_user_id][curr_ques_id] >= 0.5:
+                predictions.append(1)
+            else:
+                predictions.append(0)
+        correct = 0
+        for j in range(len(predictions)):
+            if predictions[j] == val_data['is_correct'][j]:
+                correct += 1
+        accuracies.append(correct / len(val_data['is_correct']))
+        # accuracies.append(np.sum(predictions == val_data['is_correct']) / len(val_data['is_correct']))
+    print(accuracies)
 
-    k = [1, 3, 5, 7, 9]
-    svd_matrices = []
-    losses = []
-    for i in range(len(k)):
-        svd_matrices.append(svd_reconstruct(train_matrix, k[i]))
-        losses.append(squared_error_loss(val_data, train_matrix, svd_matrices[i]))
-    print(losses)
+    # Test for k*=9:
+    predictions = []
+    curr_svd_matrix = svd_reconstruct(train_matrix, 9)
+    for i in range(len(test_data['user_id'])):
+        curr_user_id = test_data['user_id'][i]
+        curr_ques_id = test_data['question_id'][i]
+        if curr_svd_matrix[curr_user_id][curr_ques_id] >= 0.5:
+            predictions.append(1)
+        else:
+            predictions.append(0)
+    correct = 0
+    for j in range(len(predictions)):
+        if predictions[j] == test_data['is_correct'][j]:
+            correct += 1
+    test_acc = correct / len(test_data['is_correct'])
+    print(test_acc)
+
+
+
     #####################################################################
     #                       END OF YOUR CODE                            #
     #####################################################################
