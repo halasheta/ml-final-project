@@ -115,7 +115,11 @@ def als(train_data, k, lr, num_iteration):
     # TODO:                                                             #
     # Implement the function as described in the docstring.             #
     #####################################################################
-    mat = None
+
+    for i in range(num_iteration):
+        update_u_z(train_data, lr, u, z)
+
+    mat = u @ z.T
     #####################################################################
     #                       END OF YOUR CODE                            #
     #####################################################################
@@ -178,8 +182,43 @@ def main():
     # TODO:                                                             #
     # (ALS) Try out at least 5 different k and select the best k        #
     # using the validation set.
+    lr = 0.5
+    num_iterations = 9000
+    als_k = [1, 4, 5, 15, 22, 30, 35, 40, 50, 70, 80]
+    als_acc = []
+    for k in als_k:
+        als_predict = []
+        curr_als_matrix = als(train_data, k, lr, num_iterations)
+        for i in range(len(val_data['user_id'])):
+            curr_user_id = val_data['user_id'][i]
+            curr_ques_id = val_data['question_id'][i]
+            if curr_als_matrix[curr_user_id][curr_ques_id] >= 0.5:
+                als_predict.append(1)
+            else:
+                als_predict.append(0)
+        als_correct = 0
+        for j in range(len(als_predict)):
+            if als_predict[j] == val_data['is_correct'][j]:
+                als_correct += 1
+        als_acc.append(als_correct / len(val_data['is_correct']))
+    print("als:")
+    print(als_acc)
 
-    als(train_data, 9, 0.01, 10)
+    als_test = []
+    curr_als = als(train_data, 35, lr, num_iterations)
+    for i in range(len(test_data['user_id'])):
+        curr_user_id = test_data['user_id'][i]
+        curr_ques_id = test_data['question_id'][i]
+        if curr_als[curr_user_id][curr_ques_id] >= 0.5:
+            als_test.append(1)
+        else:
+            als_test.append(0)
+    correct_test = 0
+    for j in range(len(als_test)):
+        if als_test[j] == test_data['is_correct'][j]:
+            correct_test += 1
+    test_acc = correct_test / len(test_data['is_correct'])
+    print(test_acc)
     #####################################################################
     #####################################################################
     #                       END OF YOUR CODE                            #
