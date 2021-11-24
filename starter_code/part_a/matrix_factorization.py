@@ -81,11 +81,11 @@ def update_u_z(train_data, lr, u, z):
     n = train_data["user_id"][i]
     q = train_data["question_id"][i]
 
-    # fix z and derive wrt u
+    # fix z[q] and derive wrt u[n]
     dL_du = -z[q].reshape(-1, 1) @ (c - (u[n].reshape(-1, 1).T @ z[q].reshape(-1, 1)))
     u[n] -= lr * dL_du[0]
 
-    # fix u and derive wrt z
+    # fix u[n] and derive wrt z[q]
     dL_dz = -u[n].reshape(-1, 1) @ (c - (u[n].reshape(-1, 1).T @ z[q].reshape(-1, 1)))
     z[q] -= lr * dL_dz[0]
     #####################################################################
@@ -186,6 +186,7 @@ def main():
     num_iterations = 9000
     als_k = [1, 4, 5, 15, 22, 30, 35, 40, 50, 70, 80]
     als_acc = []
+    losses = []
     for k in als_k:
         als_predict = []
         curr_als_matrix = als(train_data, k, lr, num_iterations)

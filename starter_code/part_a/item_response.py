@@ -26,14 +26,27 @@ def neg_log_likelihood(data, theta, beta):
     # Implement the function as described in the docstring.             #
     #####################################################################
     N, D = theta.shape[0], beta.shape[0]
+    #
+    # s = 0
+    # for i in range(N):
+    #     for j in range(D):
+    #         if data["is_correct"][i] == 1:
+    #             s += theta[i] - np.log(np.exp(theta[i]) + np.exp(beta[j]))
+    #     print(s)
+    # log_lklihood = s[0]
 
+    # vec = np.zeros((N, 1))
+    # for i in range(N):
+    #     vec[i] = np.sum(np.log(np.exp(theta[i]) + np.exp(beta)))
+
+    # log_lklihood = np.sum(D * theta - vec)
 
     vec = np.zeros((N, 1))
     for i in range(N):
-        vec[i] = np.sum(np.log(np.exp(theta[i]) + np.exp(beta)))
-
-    # use indicator!! not D * theta
-    log_lklihood = np.sum(D * theta - vec)
+        theta_i = np.tile(theta[i], (D, 1))
+        if data["is_correct"][i] == 1:
+            vec[i] = np.sum(theta_i) - np.sum(np.log(np.exp(theta_i) + np.exp(beta)))
+    log_lklihood = np.sum(vec)
     #####################################################################
     #                       END OF YOUR CODE                            #
     #####################################################################
@@ -64,15 +77,18 @@ def update_theta_beta(data, lr, theta, beta):
     num_iterations = 50
     N, D = theta.shape[0], beta.shape[0]
 
+    print(len(data["user_id"]), len(data["question_id"]), len(data["is_correct"]))
     # need to include the indicator somehow
     for k in range(num_iterations):
         dL_dtheta = 0
         for i in range(N):
-            dL_dtheta += np.sum(np.exp(beta) / (np.exp(theta[i]) + np.exp(beta)))
+            if data["is_correct"][i] == 1:
+                dL_dtheta += np.sum(np.exp(beta) / (np.exp(theta[i]) + np.exp(beta)))
 
         dL_dbeta = 0
         for j in range(D):
-            dL_dbeta += - np.exp(beta[j]) / (np.exp(theta) + np.exp(beta[j]))
+            if data["is_correct"][j] == 1:
+                dL_dbeta += - np.exp(beta[j]) / (np.exp(theta) + np.exp(beta[j]))
         theta = theta - lr * dL_dtheta
     #####################################################################
     #                       END OF YOUR CODE                            #
@@ -136,19 +152,21 @@ def main():
     val_data = load_valid_csv("../data")
     test_data = load_public_test_csv("../data")
 
-    theta = np.zeros((3, 1))
-    beta = np.zeros((2, 1))
+    N = len(train_data["user_id"])
+    theta = np.zeros((N, 1))
+    beta = np.zeros((N, 1))
 
-    theta[0], theta[1], theta[2] = 1, 1, 1
-    beta[0], beta[1] = 1, 2
+    # theta[0], theta[1], theta[2] = 0.4, 0.3, 0.1
+    # beta[0], beta[1] = 0.1, 0.3
 
     print(neg_log_likelihood(train_data, theta, beta))
+
     #####################################################################
     # TODO:                                                             #
     # Tune learning rate and number of iterations. With the implemented #
     # code, report the validation and test accuracy.                    #
     #####################################################################
-    pass
+    update_theta_beta(train_data, 0.01, theta, beta)
     #####################################################################
     #                       END OF YOUR CODE                            #
     #####################################################################
