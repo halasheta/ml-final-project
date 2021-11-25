@@ -43,10 +43,29 @@ def neg_log_likelihood(data, theta, beta):
 
     vec = np.zeros((N, 1))
     for i in range(N):
-        theta_i = np.tile(theta[i], (D, 1))
         if data["is_correct"][i] == 1:
-            vec[i] = np.sum(theta_i) - np.sum(np.log(np.exp(theta_i) + np.exp(beta)))
+            theta_i = np.tile(theta[i], (D, 1))
+            # vec[i] = np.sum(theta_i) - np.sum(np.log(np.exp(theta_i) + np.exp(beta)))
+            vec[i] = np.sum(theta_i - np.logaddexp(theta_i, beta))
     log_lklihood = np.sum(vec)
+
+    # is_correct = np.array(data['is_correct']).reshape(-1, 1)
+    # theta_vect = is_correct * theta
+    # beta_vect = is_correct * beta
+
+    # theta_matrix = np.tile(theta, (D, 1))
+    # beta_matrix = np.tile(beta, (D, 1))
+    #
+    # print(theta_matrix.shape)
+    # print(beta_matrix.shape)
+    #
+    # term2 = np.sum(np.log(np.exp(theta_matrix.T) + np.exp(beta_matrix)), axis=0)
+    # print(term2.shape)
+    # # log_likelihood_matrix = theta_matrix - term2
+    # print(theta_matrix.shape)
+    # print(theta_matrix)
+
+
     #####################################################################
     #                       END OF YOUR CODE                            #
     #####################################################################
@@ -74,22 +93,26 @@ def update_theta_beta(data, lr, theta, beta):
     # TODO:                                                             #
     # Implement the function as described in the docstring.             #
     #####################################################################
-    num_iterations = 50
+    # num_iterations = 1
     N, D = theta.shape[0], beta.shape[0]
 
-    print(len(data["user_id"]), len(data["question_id"]), len(data["is_correct"]))
-    # need to include the indicator somehow
-    for k in range(num_iterations):
-        dL_dtheta = 0
-        for i in range(N):
-            if data["is_correct"][i] == 1:
-                dL_dtheta += np.sum(np.exp(beta) / (np.exp(theta[i]) + np.exp(beta)))
+    # for k in range(num_iterations):
+    dL_dtheta = np.zeros((N, 1))
+    for i in range(N):
+        if data["is_correct"][i] == 1:
+            theta_i = np.tile(theta[i], (D, 1))
+            # dL_dtheta[i] = np.sum(np.exp(beta) / (np.exp(theta_i) + np.exp(beta)))
+            dL_dtheta[i] = np.sum(np.exp(beta) / np.exp(np.logaddexp(theta_i, beta)))
+    theta = theta - (lr * dL_dtheta)
 
-        dL_dbeta = 0
-        for j in range(D):
-            if data["is_correct"][j] == 1:
-                dL_dbeta += - np.exp(beta[j]) / (np.exp(theta) + np.exp(beta[j]))
-        theta = theta - lr * dL_dtheta
+    dL_dbeta = np.zeros((D, 1))
+    for j in range(D):
+        if data["is_correct"][j] == 1:
+            beta_j = np.tile(beta[j], (N, 1))
+            # dL_dbeta[j] = np.sum(- np.exp(beta_j) / (np.exp(theta) + np.exp(beta_j)))
+            dL_dbeta[j] = np.sum(- np.exp(beta_j) / np.exp(np.logaddexp(theta, beta_j)))
+    beta = beta - (lr * dL_dbeta)
+
     #####################################################################
     #                       END OF YOUR CODE                            #
     #####################################################################
@@ -110,8 +133,12 @@ def irt(data, val_data, lr, iterations):
     :return: (theta, beta, val_acc_lst)
     """
     # TODO: Initialize theta and beta.
-    theta = None
-    beta = None
+    # theta = np.random.uniform(low=0, high=1,
+    #                           size=(len((data["user_id"])), 1))
+    # beta = np.random.uniform(low=0, high=1,
+    #                          size=(len((data["question_id"])), 1))
+    theta = np.zeros((len(data['user_id']), 1))
+    beta = np.zeros((len(data['question_id']), 1))
 
     val_acc_lst = []
 
@@ -121,6 +148,7 @@ def irt(data, val_data, lr, iterations):
         val_acc_lst.append(score)
         print("NLLK: {} \t Score: {}".format(neg_lld, score))
         theta, beta = update_theta_beta(data, lr, theta, beta)
+        print(theta, beta)
 
     # TODO: You may change the return values to achieve what you want.
     return theta, beta, val_acc_lst
@@ -152,21 +180,21 @@ def main():
     val_data = load_valid_csv("../data")
     test_data = load_public_test_csv("../data")
 
-    N = len(train_data["user_id"])
-    theta = np.zeros((N, 1))
-    beta = np.zeros((N, 1))
+    theta = np.random.uniform(low=0, high=1,
+                              size=(len((train_data["user_id"])), 1))
+    beta = np.random.uniform(low=0, high=1,
+                             size=(len((train_data["question_id"])), 1))
 
-    # theta[0], theta[1], theta[2] = 0.4, 0.3, 0.1
-    # beta[0], beta[1] = 0.1, 0.3
-
-    print(neg_log_likelihood(train_data, theta, beta))
+    print('loglik:')
+    print(irt(train_data, val_data, lr=0.1, iterations=4))
+    # print(neg_log_likelihood(train_data, theta, beta))
 
     #####################################################################
     # TODO:                                                             #
     # Tune learning rate and number of iterations. With the implemented #
     # code, report the validation and test accuracy.                    #
     #####################################################################
-    update_theta_beta(train_data, 0.01, theta, beta)
+    # update_theta_beta(train_data, 0.01, theta, beta)
     #####################################################################
     #                       END OF YOUR CODE                            #
     #####################################################################
