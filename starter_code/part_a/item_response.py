@@ -96,13 +96,16 @@ def update_theta_beta(data, lr, theta, beta):
     # num_iterations = 1
     N, D = theta.shape[0], beta.shape[0]
 
+    # num_it
     # for k in range(num_iterations):
     dL_dtheta = np.zeros((N, 1))
     for i in range(N):
-        if data["is_correct"][i] == 1:
-            theta_i = np.tile(theta[i], (D, 1))
-            # dL_dtheta[i] = np.sum(np.exp(beta) / (np.exp(theta_i) + np.exp(beta)))
-            dL_dtheta[i] = np.sum(np.exp(beta) / np.exp(np.logaddexp(theta_i, beta)))
+        # if data["is_correct"][i] == 1:
+        theta_i = np.tile(theta[i], (D, 1))
+        # dL_dtheta[i] = np.sum(np.exp(beta) / (np.exp(theta_i) + np.exp(beta)))
+        dL_dtheta[i] = np.sum(np.exp(beta) / np.exp(np.logaddexp(theta_i, beta)))
+
+    # gradient of the sum of the losses = sum of individual losses * lr
     theta = theta - (lr * dL_dtheta)
 
     dL_dbeta = np.zeros((D, 1))

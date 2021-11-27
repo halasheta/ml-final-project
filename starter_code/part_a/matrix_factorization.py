@@ -123,7 +123,7 @@ def als(train_data, k, lr, num_iteration):
     #####################################################################
     #                       END OF YOUR CODE                            #
     #####################################################################
-    return mat
+    return mat, u, z
 
 
 def main():
@@ -182,44 +182,22 @@ def main():
     # TODO:                                                             #
     # (ALS) Try out at least 5 different k and select the best k        #
     # using the validation set.
-    lr = 0.5
-    num_iterations = 9000
-    als_k = [1, 4, 5, 15, 22, 30, 35, 40, 50, 70, 80]
-    als_acc = []
+    lr = 0.12
+    num_iterations = 50000
+    als_k = [1, 4, 5, 15, 22, 30, 35, 40, 50, 70, 80, 150]
     losses = []
     for k in als_k:
-        als_predict = []
-        curr_als_matrix = als(train_data, k, lr, num_iterations)
-        for i in range(len(val_data['user_id'])):
-            curr_user_id = val_data['user_id'][i]
-            curr_ques_id = val_data['question_id'][i]
-            if curr_als_matrix[curr_user_id][curr_ques_id] >= 0.5:
-                als_predict.append(1)
-            else:
-                als_predict.append(0)
-        als_correct = 0
-        for j in range(len(als_predict)):
-            if als_predict[j] == val_data['is_correct'][j]:
-                als_correct += 1
-        als_acc.append(als_correct / len(val_data['is_correct']))
-    print("als:")
-    print(als_acc)
+        curr_als_matrix, u, z = als(train_data, k, lr, num_iterations)
+        losses.append(squared_error_loss(val_data, u, z))
 
-    als_test = []
-    curr_als = als(train_data, 35, lr, num_iterations)
-    for i in range(len(test_data['user_id'])):
-        curr_user_id = test_data['user_id'][i]
-        curr_ques_id = test_data['question_id'][i]
-        if curr_als[curr_user_id][curr_ques_id] >= 0.5:
-            als_test.append(1)
-        else:
-            als_test.append(0)
-    correct_test = 0
-    for j in range(len(als_test)):
-        if als_test[j] == test_data['is_correct'][j]:
-            correct_test += 1
-    test_acc = correct_test / len(test_data['is_correct'])
-    print(test_acc)
+    print("als:")
+    print(losses)
+    print(min(losses), als_k[losses.index(min(losses))])
+    k_star = als_k[losses.index(min(losses))]
+    test_als, u, z = als(train_data, k_star, lr, num_iterations)
+    test_loss = squared_error_loss(test_data, u, z)
+    print(test_loss)
+
     #####################################################################
     #####################################################################
     #                       END OF YOUR CODE                            #
