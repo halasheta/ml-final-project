@@ -109,11 +109,11 @@ def main():
     models, accuracies = generate_models(val_data, matrices, ks=[9, 11, 21])
     combined = accuracies["model 1"] + accuracies["model 2"] + accuracies["model 3"]
     avg_val = sum(combined) / len(combined)
-    print("Average validation accuracy: " + avg_val)
+    print("Average validation accuracy: " + str(avg_val))
 
     test_acc = test_accuracy(test_data, models, matrices)
     avg_test = sum(test_acc) / len(test_acc)
-    print("Average test accuracy: " + avg_test)
+    print("Average test accuracy: " + str(avg_test))
 
 
 if __name__ == "__main__":
