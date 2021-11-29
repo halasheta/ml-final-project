@@ -10,6 +10,14 @@ def sigmoid(x):
     return np.exp(x) / (1 + np.exp(x))
 
 
+def stable_sigmoid(z):
+    """
+    A more stable sigmoid cuz urs sucks
+    """
+    const = 1e-5
+    return 1 / (1 + np.exp(-z + const))
+
+
 def neg_log_likelihood(data, theta, beta):
     """ Compute the negative log-likelihood.
 
@@ -45,12 +53,14 @@ def neg_log_likelihood(data, theta, beta):
     for i in range(N):
         if data["is_correct"][i] == 1:
             theta_i = np.tile(theta[i], (D, 1))
+            vec[i] = np.sum(np.log(stable_sigmoid(theta_i - beta)))
             # vec[i] = np.sum(theta_i) - np.sum(np.log(np.exp(theta_i) + np.exp(beta)))
-            vec[i] = np.sum(theta_i - np.logaddexp(theta_i, beta))
+            # vec[i] = np.sum(theta_i - np.logaddexp(theta_i, beta))
         if data["is_correct"][i] == 0:
             theta_i = np.tile(theta[i], (D, 1))
+            vec[i] = np.sum(1 - np.log(stable_sigmoid(theta_i - beta)))
             # vec[i] = np.sum(theta_i) - np.sum(np.log(np.exp(theta_i) + np.exp(beta)))
-            vec[i] = np.sum(beta - np.logaddexp(theta_i, beta))
+            # vec[i] = np.sum(beta - np.logaddexp(theta_i, beta))
 
     log_lklihood = np.sum(vec)
 
@@ -69,7 +79,6 @@ def neg_log_likelihood(data, theta, beta):
     # # log_likelihood_matrix = theta_matrix - term2
     # print(theta_matrix.shape)
     # print(theta_matrix)
-
 
     #####################################################################
     #                       END OF YOUR CODE                            #
@@ -100,29 +109,42 @@ def update_theta_beta(data, lr, theta, beta):
     #####################################################################
     # num_iterations = 1
     N, D = theta.shape[0], beta.shape[0]
-    const = 1e-5
+
 
     # for k in range(num_iterations):
     dL_dtheta = np.zeros((N, 1))
     for i in range(N):
         theta_i = np.tile(theta[i], (D, 1))
         if data["is_correct"][i] == 1:
-            # dL_dtheta[i] = np.sum(np.exp(beta) / (np.exp(theta_i) + np.exp(beta)))
-            dL_dtheta[i] = np.sum(np.exp(beta + const) / np.exp(np.logaddexp(theta_i, beta) + const))
+            dL_dtheta[i] = np.sum(1 - stable_sigmoid(theta_i - beta))
+            # term1 = np.exp(beta + const)
+            # term2 = np.logaddexp(theta_i, beta) + const
+            # term3 = (np.exp(term2) + const)
+            # quotient_sum = np.sum(term1 / term3)
+            # dL_dtheta[i] = quotient_sum
+            # dL_dtheta[i] = np.sum(np.exp(beta + const) / (np.exp(np.logaddexp(theta_i, beta) + const) + const))
         elif data["is_correct"][i] == 0:
-            # dL_dtheta[i] = np.sum(np.exp(beta) / (np.exp(theta_i) + np.exp(beta)))
-            dL_dtheta[i] = - np.sum(np.exp(theta_i + const) / np.exp(np.logaddexp(theta_i, beta) + const))
+            dL_dtheta[i] = np.sum(- stable_sigmoid(theta_i - beta))
+            # term1 = np.exp(theta_i + const)
+            # term2 = np.logaddexp(theta_i, beta) + const
+            # term3 = (np.exp(term2) + const)
+            # quotient_sum = - np.sum(term1 / term3)
+            # dL_dtheta[i] = quotient_sum
+            # dL_dtheta[i] = - np.sum(np.exp(theta_i + const) / (np.exp(np.logaddexp(theta_i, beta) + const) + const))
     theta = theta - (lr * dL_dtheta)
 
     dL_dbeta = np.zeros((D, 1))
     for j in range(D):
         beta_j = np.tile(beta[j], (N, 1))
         if data["is_correct"][j] == 1:
+            dL_dbeta[j] = np.sum(stable_sigmoid(theta - beta_j) - 1)
             # dL_dbeta[j] = np.sum(- np.exp(beta_j) / (np.exp(theta) + np.exp(beta_j)))
-            dL_dbeta[j] = np.sum(- np.exp(beta_j + const) / np.exp(np.logaddexp(theta, beta_j) + const))
+            # dL_dbeta[j] = np.sum(- np.exp(beta_j + const) / (np.exp(np.logaddexp(theta, beta_j) + const) + const))
         if data["is_correct"][j] == 0:
+            dL_dbeta[j] = np.sum(stable_sigmoid(theta - beta_j))
+
             # dL_dbeta[j] = np.sum(- np.exp(beta_j) / (np.exp(theta) + np.exp(beta_j)))
-            dL_dbeta[j] = np.sum(np.exp(theta + const) / np.exp(np.logaddexp(theta, beta_j) + const))
+            # dL_dbeta[j] = np.sum(np.exp(theta + const) / (np.exp(np.logaddexp(theta, beta_j) + const) + const))
     beta = beta - (lr * dL_dbeta)
 
     #####################################################################
@@ -177,7 +199,8 @@ def evaluate(data, theta, beta):
     for i, q in enumerate(data["question_id"]):
         u = data["user_id"][i]
         x = (theta[u] - beta[q]).sum()
-        p_a = sigmoid(x)
+        # p_a = sigmoid(x)
+        p_a = stable_sigmoid(x)
         pred.append(p_a >= 0.5)
     return np.sum((data["is_correct"] == np.array(pred))) \
            / len(data["is_correct"])
@@ -189,11 +212,6 @@ def main():
     sparse_matrix = load_train_sparse("../data")
     val_data = load_valid_csv("../data")
     test_data = load_public_test_csv("../data")
-
-    theta = np.random.uniform(low=0, high=1,
-                              size=(len((train_data["user_id"])), 1))
-    beta = np.random.uniform(low=0, high=1,
-                             size=(len((train_data["question_id"])), 1))
 
     print('irt:')
     print(irt(train_data, val_data, lr=0.1, iterations=4))

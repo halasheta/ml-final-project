@@ -71,33 +71,20 @@ def generate_models(valid_data, sparse_matrices, ks):
     return models, models_acc
 
 
-def fit_predict(valid_data, model, sparse_matrices):
+def fit_predict(data, model, sparse_matrices):
+    """
+    Fit and predict the given data and return the accuracies.
+    """
     accuracies = []
     for mat in sparse_matrices:
         predictions = model.fit_transform(mat)
-        accuracies.append(sparse_matrix_evaluate(valid_data, predictions))
-
-    return accuracies
-
-
-def test_accuracy(test_data, models, sparse_matrices):
-    accuracies = []
-    for model in models:
-        for mat in sparse_matrices:
-            predictions = model.fit_transform(mat)
-            accuracies.append(sparse_matrix_evaluate(test_data, predictions))
+        accuracies.append(sparse_matrix_evaluate(data, predictions))
 
     return accuracies
 
 
 def main():
-    # train_data1 = load_train_csv("../data")
-    # sparse_matrix = load_train_sparse("../data").toarray()
-    # val_data = load_valid_csv("../data")
-    # test_data = load_public_test_csv("../data")
-
     train_path = os.path.join("../data", "train_data.csv")
-    # val_path = os.path.join("../data", "valid_data.csv")
 
     train_data = load_data(train_path)
     val_data = load_valid_csv("../data")
@@ -111,7 +98,9 @@ def main():
     avg_val = sum(combined) / len(combined)
     print("Average validation accuracy: " + str(avg_val))
 
-    test_acc = test_accuracy(test_data, models, matrices)
+    test_acc = []
+    for model in models:
+        test_acc += fit_predict(test_data, model, matrices)
     avg_test = sum(test_acc) / len(test_acc)
     print("Average test accuracy: " + str(avg_test))
 
