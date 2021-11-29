@@ -58,7 +58,7 @@ def neg_log_likelihood(data, theta, beta):
             # vec[i] = np.sum(theta_i - np.logaddexp(theta_i, beta))
         if data["is_correct"][i] == 0:
             theta_i = np.tile(theta[i], (D, 1))
-            vec[i] = np.sum(1 - np.log(stable_sigmoid(theta_i - beta)))
+            vec[i] = np.sum(np.log(1 - stable_sigmoid(theta_i - beta)))
             # vec[i] = np.sum(theta_i) - np.sum(np.log(np.exp(theta_i) + np.exp(beta)))
             # vec[i] = np.sum(beta - np.logaddexp(theta_i, beta))
 
