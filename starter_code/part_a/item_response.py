@@ -47,6 +47,11 @@ def neg_log_likelihood(data, theta, beta):
             theta_i = np.tile(theta[i], (D, 1))
             # vec[i] = np.sum(theta_i) - np.sum(np.log(np.exp(theta_i) + np.exp(beta)))
             vec[i] = np.sum(theta_i - np.logaddexp(theta_i, beta))
+        if data["is_correct"][i] == 0:
+            theta_i = np.tile(theta[i], (D, 1))
+            # vec[i] = np.sum(theta_i) - np.sum(np.log(np.exp(theta_i) + np.exp(beta)))
+            vec[i] = np.sum(beta - np.logaddexp(theta_i, beta))
+
     log_lklihood = np.sum(vec)
 
     # is_correct = np.array(data['is_correct']).reshape(-1, 1)
@@ -95,25 +100,29 @@ def update_theta_beta(data, lr, theta, beta):
     #####################################################################
     # num_iterations = 1
     N, D = theta.shape[0], beta.shape[0]
+    const = 1e-5
 
-    # num_it
     # for k in range(num_iterations):
     dL_dtheta = np.zeros((N, 1))
     for i in range(N):
-        # if data["is_correct"][i] == 1:
         theta_i = np.tile(theta[i], (D, 1))
-        # dL_dtheta[i] = np.sum(np.exp(beta) / (np.exp(theta_i) + np.exp(beta)))
-        dL_dtheta[i] = np.sum(np.exp(beta) / np.exp(np.logaddexp(theta_i, beta)))
-
-    # gradient of the sum of the losses = sum of individual losses * lr
+        if data["is_correct"][i] == 1:
+            # dL_dtheta[i] = np.sum(np.exp(beta) / (np.exp(theta_i) + np.exp(beta)))
+            dL_dtheta[i] = np.sum(np.exp(beta + const) / np.exp(np.logaddexp(theta_i, beta) + const))
+        elif data["is_correct"][i] == 0:
+            # dL_dtheta[i] = np.sum(np.exp(beta) / (np.exp(theta_i) + np.exp(beta)))
+            dL_dtheta[i] = - np.sum(np.exp(theta_i + const) / np.exp(np.logaddexp(theta_i, beta) + const))
     theta = theta - (lr * dL_dtheta)
 
     dL_dbeta = np.zeros((D, 1))
     for j in range(D):
+        beta_j = np.tile(beta[j], (N, 1))
         if data["is_correct"][j] == 1:
-            beta_j = np.tile(beta[j], (N, 1))
             # dL_dbeta[j] = np.sum(- np.exp(beta_j) / (np.exp(theta) + np.exp(beta_j)))
-            dL_dbeta[j] = np.sum(- np.exp(beta_j) / np.exp(np.logaddexp(theta, beta_j)))
+            dL_dbeta[j] = np.sum(- np.exp(beta_j + const) / np.exp(np.logaddexp(theta, beta_j) + const))
+        if data["is_correct"][j] == 0:
+            # dL_dbeta[j] = np.sum(- np.exp(beta_j) / (np.exp(theta) + np.exp(beta_j)))
+            dL_dbeta[j] = np.sum(np.exp(theta + const) / np.exp(np.logaddexp(theta, beta_j) + const))
     beta = beta - (lr * dL_dbeta)
 
     #####################################################################
@@ -136,12 +145,10 @@ def irt(data, val_data, lr, iterations):
     :return: (theta, beta, val_acc_lst)
     """
     # TODO: Initialize theta and beta.
-    # theta = np.random.uniform(low=0, high=1,
-    #                           size=(len((data["user_id"])), 1))
-    # beta = np.random.uniform(low=0, high=1,
-    #                          size=(len((data["question_id"])), 1))
-    theta = np.zeros((len(data['user_id']), 1))
-    beta = np.zeros((len(data['question_id']), 1))
+    theta = np.random.uniform(low=0, high=1,
+                              size=(len((data["user_id"])), 1))
+    beta = np.random.uniform(low=0, high=1,
+                             size=(len((data["question_id"])), 1))
 
     val_acc_lst = []
 
@@ -188,7 +195,7 @@ def main():
     beta = np.random.uniform(low=0, high=1,
                              size=(len((train_data["question_id"])), 1))
 
-    print('loglik:')
+    print('irt:')
     print(irt(train_data, val_data, lr=0.1, iterations=4))
     # print(neg_log_likelihood(train_data, theta, beta))
 
