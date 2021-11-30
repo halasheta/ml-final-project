@@ -1,6 +1,6 @@
 from starter_code.utils import *
 from scipy.linalg import sqrtm
-
+from matplotlib import pyplot
 import numpy as np
 
 
@@ -82,11 +82,13 @@ def update_u_z(train_data, lr, u, z):
     q = train_data["question_id"][i]
 
     # fix z[q] and derive wrt u[n]
-    dL_du = -z[q].reshape(-1, 1) @ (c - (u[n].reshape(-1, 1).T @ z[q].reshape(-1, 1)))
+    dL_du = -z[q].reshape(-1, 1) @ (
+                c - (u[n].reshape(-1, 1).T @ z[q].reshape(-1, 1)))
     u[n] -= lr * dL_du[0]
 
     # fix u[n] and derive wrt z[q]
-    dL_dz = -u[n].reshape(-1, 1) @ (c - (u[n].reshape(-1, 1).T @ z[q].reshape(-1, 1)))
+    dL_dz = -u[n].reshape(-1, 1) @ (
+                c - (u[n].reshape(-1, 1).T @ z[q].reshape(-1, 1)))
     z[q] -= lr * dL_dz[0]
     #####################################################################
     #                       END OF YOUR CODE                            #
@@ -95,7 +97,7 @@ def update_u_z(train_data, lr, u, z):
 
 
 def als(train_data, k, lr, num_iteration):
-    """ Performs ALS algorithm, here we use the iterative solution - SGD 
+    """ Performs ALS algorithm, here we use the iterative solution - SGD
     rather than the direct solution.
 
     :param train_data: A dictionary {user_id: list, question_id: list,
@@ -124,6 +126,10 @@ def als(train_data, k, lr, num_iteration):
     #                       END OF YOUR CODE                            #
     #####################################################################
     return mat, u, z
+
+
+# def plot_func(k, iterations, train_data, lr):
+#     # als(train_data, k, lr, iterations)
 
 
 def main():
@@ -184,19 +190,27 @@ def main():
     # using the validation set.
     lr = 0.12
     num_iterations = 50000
+    iteration = [i for i in range(num_iterations)]
     als_k = [1, 4, 5, 15, 22, 30, 35, 40, 50, 70, 80, 150]
+
     losses = []
     for k in als_k:
         curr_als_matrix, u, z = als(train_data, k, lr, num_iterations)
         losses.append(squared_error_loss(val_data, u, z))
 
-    print("als:")
-    print(losses)
-    print(min(losses), als_k[losses.index(min(losses))])
-    k_star = als_k[losses.index(min(losses))]
-    test_als, u, z = als(train_data, k_star, lr, num_iterations)
-    test_loss = squared_error_loss(test_data, u, z)
-    print(test_loss)
+    train_losses =[]
+    for i in range(50000):
+        curr_als_matrix, u, z = als(train_data, 35, lr, i)
+        train_losses.append(squared_error_loss(train_data, u, z))
+    pyplot.plot(iteration, train_losses)
+    pyplot.show()
+    # print("als:")
+    # print(losses)
+    # print(min(losses), als_k[losses.index(min(losses))])
+    # k_star = als_k[losses.index(min(losses))]
+    # test_als, u, z = als(train_data, k_star, lr, num_iterations)
+    # test_loss = squared_error_loss(test_data, u, z)
+    # print(test_loss)
 
     #####################################################################
     #####################################################################
