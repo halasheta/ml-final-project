@@ -3,6 +3,8 @@ from starter_code.utils import *
 import numpy as np
 import scipy.special as sp
 
+np.random.seed(0)
+
 
 def sigmoid(x):
     """ Apply sigmoid function.
@@ -16,6 +18,31 @@ def stable_sigmoid(z):
     """
     const = 1e-5
     return 1 / (1 + np.exp(-z + const))
+
+
+def finite_diff_nll(data, theta, beta):
+    const = 1e-5
+    N, D = theta.shape[0], beta.shape[0]
+
+    vec1 = np.zeros((N, 1))
+    vec2 = np.zeros((N, 1))
+
+    theta_copy = theta
+    theta_copy[0] += const
+
+    for i in range(50):
+        theta_i = np.tile(theta[i], (D, 1))
+        theta_2 = np.tile(theta_copy[i], (D, 1))
+        if data["is_correct"][i] == 1:
+            vec1[i] = np.sum(theta_2 - np.logaddexp(theta_2, beta))
+            vec2[i] = np.sum(theta_i - np.logaddexp(theta_i, beta))
+        elif data["is_correct"][i] == 0:
+            vec1[i] = np.sum(beta - np.logaddexp(theta_2, beta))
+            vec2[i] = np.sum(beta - np.logaddexp(theta_i, beta))
+    sum1 = np.sum(vec1)
+    sum2 = np.sum(vec2)
+    log_lklihood = sum1 - sum2
+    return log_lklihood / const
 
 
 def neg_log_likelihood(data, theta, beta):
@@ -53,14 +80,14 @@ def neg_log_likelihood(data, theta, beta):
     for i in range(N):
         if data["is_correct"][i] == 1:
             theta_i = np.tile(theta[i], (D, 1))
-            vec[i] = np.sum(np.log(stable_sigmoid(theta_i - beta)))
+            # vec[i] = np.sum(np.log(stable_sigmoid(theta_i - beta)))
             # vec[i] = np.sum(theta_i) - np.sum(np.log(np.exp(theta_i) + np.exp(beta)))
-            # vec[i] = np.sum(theta_i - np.logaddexp(theta_i, beta))
+            vec[i] = np.sum(theta_i - np.logaddexp(theta_i, beta))
         if data["is_correct"][i] == 0:
             theta_i = np.tile(theta[i], (D, 1))
-            vec[i] = np.sum(np.log(1 - stable_sigmoid(theta_i - beta)))
+            # vec[i] = np.sum(np.log(1 - stable_sigmoid(theta_i - beta)))
             # vec[i] = np.sum(theta_i) - np.sum(np.log(np.exp(theta_i) + np.exp(beta)))
-            # vec[i] = np.sum(beta - np.logaddexp(theta_i, beta))
+            vec[i] = np.sum(beta - np.logaddexp(theta_i, beta))
 
     log_lklihood = np.sum(vec)
 
@@ -109,7 +136,7 @@ def update_theta_beta(data, lr, theta, beta):
     #####################################################################
     # num_iterations = 1
     N, D = theta.shape[0], beta.shape[0]
-
+    const = 1e-10
 
     # for k in range(num_iterations):
     dL_dtheta = np.zeros((N, 1))
@@ -117,6 +144,7 @@ def update_theta_beta(data, lr, theta, beta):
         theta_i = np.tile(theta[i], (D, 1))
         if data["is_correct"][i] == 1:
             dL_dtheta[i] = np.sum(1 - stable_sigmoid(theta_i - beta))
+
             # term1 = np.exp(beta + const)
             # term2 = np.logaddexp(theta_i, beta) + const
             # term3 = (np.exp(term2) + const)
@@ -150,7 +178,7 @@ def update_theta_beta(data, lr, theta, beta):
     #####################################################################
     #                       END OF YOUR CODE                            #
     #####################################################################
-    return theta, beta
+    return theta, beta, dL_dtheta[0]
 
 
 def irt(data, val_data, lr, iterations):
@@ -179,7 +207,7 @@ def irt(data, val_data, lr, iterations):
         score = evaluate(data=val_data, theta=theta, beta=beta)
         val_acc_lst.append(score)
         print("NLLK: {} \t Score: {}".format(neg_lld, score))
-        theta, beta = update_theta_beta(data, lr, theta, beta)
+        theta, beta = update_theta_beta(data, lr, theta, beta)[:1]
         print(theta, beta)
 
     # TODO: You may change the return values to achieve what you want.
@@ -213,9 +241,17 @@ def main():
     val_data = load_valid_csv("../data")
     test_data = load_public_test_csv("../data")
 
-    print('irt:')
-    print(irt(train_data, val_data, lr=0.1, iterations=4))
+    theta = np.random.uniform(low=0, high=1,
+                              size=(len((train_data["user_id"])), 1))
+    beta = np.random.uniform(low=0, high=1,
+                             size=(len((train_data["question_id"])), 1))
+
+    # print('irt:')
+    # print(irt(train_data, val_data, lr=0.01, iterations=20))
     # print(neg_log_likelihood(train_data, theta, beta))
+
+    print('finite diff', finite_diff_nll(train_data, theta, beta))
+    print('dL/d_theta', update_theta_beta(train_data, 0.01, theta, beta))
 
     #####################################################################
     # TODO:                                                             #
