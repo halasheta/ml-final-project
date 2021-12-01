@@ -198,11 +198,14 @@ def main():
         curr_als_matrix, u, z = als(train_data, k, lr, num_iterations)
         losses.append(squared_error_loss(val_data, u, z))
 
-    train_losses =[]
+    valid_losses =[]
     for i in range(50000):
         curr_als_matrix, u, z = als(train_data, 35, lr, i)
-        train_losses.append(squared_error_loss(train_data, u, z))
-    pyplot.plot(iteration, train_losses)
+        valid_losses.append(squared_error_loss(val_data, u, z))
+    pyplot.plot(iteration, valid_losses)
+    pyplot.title("Graph of Validation losses vs number of iterations")
+    pyplot.xlabel("Number of iterations")
+    pyplot.ylabel("Validation losses")
     pyplot.show()
     # print("als:")
     # print(losses)

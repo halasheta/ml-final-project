@@ -56,12 +56,12 @@ def neg_log_likelihood(data, theta, beta):
             # vec[i] = np.sum(np.log(stable_sigmoid(theta_i - beta)))
             # vec[i] = np.sum(theta_i) - np.sum(np.log(np.exp(theta_i) + np.exp(beta)))
             # vec[i] = np.sum(theta_i - np.logaddexp(theta_i, beta))
-            vec[i] = - np.sum(np.logaddexp(0, beta - theta_i))
+            vec[i] = np.sum(np.logaddexp(0, beta - theta_i))
         elif data["is_correct"][i] == 0:
             # vec[i] = np.sum(np.log(1 - stable_sigmoid(theta_i - beta)))
             # vec[i] = np.sum(theta_i) - np.sum(np.log(np.exp(theta_i) + np.exp(beta)))
             # vec[i] = np.sum(beta - np.logaddexp(theta_i, beta))
-            vec[i] = - np.sum(np.logaddexp(0, theta_i - beta))
+            vec[i] = np.sum(-1 * np.logaddexp(0, theta_i - beta))
 
     log_lklihood = np.sum(vec)
 
@@ -243,7 +243,7 @@ def main():
     # TODO:                                                             #
     # Implement part (d)                                                #
     #####################################################################
-    pass
+
     #####################################################################
     #                       END OF YOUR CODE                            #
     #####################################################################
