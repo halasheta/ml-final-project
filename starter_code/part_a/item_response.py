@@ -119,7 +119,7 @@ def update_theta_beta(data, lr, theta, beta):
         elif data["is_correct"][i] == 0:
             dL_dtheta[i] = - np.nan_to_num(np.sum(stable_sigmoid(theta_i - beta)))
 
-    theta = theta - (lr * dL_dtheta)
+    theta = theta + (lr * dL_dtheta)
 
     dL_dbeta = np.zeros((D, 1))
     for j in range(D):
@@ -130,7 +130,9 @@ def update_theta_beta(data, lr, theta, beta):
         elif data["is_correct"][j] == 0:
             dL_dbeta[j] = np.nan_to_num(np.sum(stable_sigmoid(theta - beta_j)))
 
-    beta = beta - (lr * dL_dbeta)
+    beta = beta + (lr * dL_dbeta)
+
+
             # dL_dtheta[i] = np.sum(1 - stable_sigmoid(theta_i - beta))
             # term1 = np.exp(beta + const)
             # term2 = np.logaddexp(theta_i, beta) + const
@@ -224,7 +226,7 @@ def main():
     test_data = load_public_test_csv("../data")
 
     print('irt:')
-    print(irt(train_data, val_data, lr=0.001, iterations=7))
+    print(irt(train_data, val_data, lr=0.0125, iterations=10))
     # print(neg_log_likelihood(train_data, theta, beta))
 
     #####################################################################
