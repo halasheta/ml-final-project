@@ -1,6 +1,7 @@
 import math
 
 from sklearn.impute import KNNImputer
+from sklearn.neighbors import RadiusNeighborsClassifier
 
 from starter_code.utils import *
 import numpy as np
@@ -53,77 +54,106 @@ def sparse_matrix_convert(datasets):
         mat = np.empty((542, 1774))
         mat.fill(math.nan)
         mat[data["user_id"], data["question_id"]] = data["is_correct"]
-        matrices.append(mat)
+        matrices.append(mat.T)
 
     return matrices
 
 
 def load_meta(path):
     """
-
     """
     if not os.path.exists(path):
         raise Exception("The specified path {} does not exist.".format(path))
 
-    data = {}
+    ques_data = {}
+    avg_data = {}
     with open(path, "r") as csv_file:
         reader = csv.reader(csv_file)
         for row in reader:
             try:
                 subjects = ast.literal_eval(row[1])
                 avg = np.mean(np.array(subjects))
-                data[int(row[0])] = (subjects, avg)
+                ques_data[int(row[0])] = avg
+                if avg not in avg_data:
+                    avg_data[avg] = []
+                avg_data[avg].append(int(row[0]))
             except ValueError:
                 # Pass first row.
                 pass
             except IndexError:
                 # is_correct might not be available.
                 pass
-    return data
+    return ques_data, avg_data
+
+
+def sort_by_avgs(avg_data, sparse_mat, train_data):
+    sorted_avgs = sorted(avg_data)
+    sorted_ques = []
+    sorted_labels = []
+    for avg in sorted_avgs:
+        sorted_ques += avg_data[avg]
+    sorted_mat = np.empty(sparse_mat.shape)
+    for i in range(len(sparse_mat)):
+        sorted_mat[i] = sparse_mat[sorted_ques[i]]
+        sorted_labels.append(train_data["is_correct"])
+    return sorted_mat, sorted_ques
 
 
 def dist(x, y, **kwargs):
     """
     Custom distance function for KNNImputer.
     """
-    print(np.sum(x - y) / len(x))
     return np.sum(x - y) / len(x)
 
 
-def generate_models(valid_data, sparse_matrices, ks):
+# def generate_models(valid_data, sparse_matrices, ks):
+#     """
+#     Train and fit data for the three different models. Return their accuracies.
+#     """
+#     models_acc = {'model 1': [], 'model 2': [], 'model 3': []}
+#     models = []
+#     for i in range(len(ks)):
+#         m = KNNImputer(n_neighbors=ks[i], metric=dist)
+#         models.append(m)
+#         models_acc['model {}'.format(i + 1)] = fit_predict(valid_data, m, sparse_matrices)
+#     return models, models_acc
+
+def generate_models(valid_data, sparse_matrices, rads):
     """
     Train and fit data for the three different models. Return their accuracies.
     """
     models_acc = {'model 1': [], 'model 2': [], 'model 3': []}
     models = []
-    for i in range(len(ks)):
-        m = KNNImputer(n_neighbors=ks[i], metric=dist)
+    for i in range(len(rads)):
+        m = RadiusNeighborsClassifier(radius=rads[i])
         models.append(m)
         models_acc['model {}'.format(i + 1)] = fit_predict(valid_data, m, sparse_matrices)
     return models, models_acc
 
 
-def fit_predict(data, model, sparse_matrices):
+def fit_predict(data, model, sparse_matrices, avg_data):
     """
     Fit and predict the given data and return the accuracies.
     """
     accuracies = []
     for mat in sparse_matrices:
-        predictions = model.fit_transform(mat.T)
+        sorted_mat = sort_by_avgs(avg_data, mat)[0]
+        model.fit(sorted_mat, )
+        predictions = model.predict(mat)
         accuracies.append(evaluate(data, predictions))
 
     return accuracies
 
 
-def evaluate(data, mat):
+def evaluate(val_data, mat, sorted_ques, threshold=0.5):
     total_prediction = 0
     total_accurate = 0
-    for i in range(len(data["is_correct"])):
-        cur_user_id = data["user_id"][i]
-        cur_question_id = data["question_id"][i]
-        if mat[cur_question_id, cur_user_id] >= 0.5 and data["is_correct"][i]:
+    for i in range(len(val_data["is_correct"])):
+        cur_user_id = val_data["user_id"][i]
+        cur_question_id = sorted_ques[i]
+        if mat[cur_question_id, cur_user_id] >= threshold and val_data["is_correct"][i]:
             total_accurate += 1
-        if mat[cur_question_id, cur_user_id] < 0.5 and not data["is_correct"][i]:
+        if mat[cur_question_id, cur_user_id] < threshold and not val_data["is_correct"][i]:
             total_accurate += 1
         total_prediction += 1
     return total_accurate / float(total_prediction)
@@ -133,25 +163,34 @@ def main():
     train_path = os.path.join("./data", "train_data.csv")
     meta_path = os.path.join("./data", "question_meta.csv")
 
-    print('meta:', load_meta(meta_path))
-
-    train_data = load_data(train_path)
+    # train_data = load_data(train_path)
+    train_data = load_train_csv("./data")
     val_data = load_valid_csv("./data")
     test_data = load_public_test_csv("./data")
+    print('train_data:', train_data)
 
-    datasets = perform_bagging(train_data, 10)
-    matrices = sparse_matrix_convert(datasets)
-
-    models, accuracies = generate_models(val_data, matrices, ks=[9, 11, 21])
-    combined = accuracies["model 1"] + accuracies["model 2"] + accuracies["model 3"]
-    avg_val = sum(combined) / len(combined)
-    print("Average validation accuracy: " + str(avg_val))
-
-    test_acc = []
-    for model in models:
-        test_acc += fit_predict(test_data, model, matrices)
-    avg_test = sum(test_acc) / len(test_acc)
-    print("Average test accuracy: " + str(avg_test))
+    # datasets = perform_bagging(train_data, 10)
+    # matrices = sparse_matrix_convert(datasets)
+    #
+    # ques_data, avg_data = load_meta(meta_path)
+    # print('ques:', ques_data)
+    # print('avg_data:', avg_data)
+    # org_mat = matrices[0]
+    # sorted_mat, sorted_ques = sort_by_avgs(avg_data, org_mat)
+    # print('sort matrix:', sorted_mat)
+    # print('org_matrix:', org_mat)
+    # # print('sorted ques:', sorted_ques)
+    #
+    # models, accuracies = generate_models(val_data, matrices, rads=[0.5, 1.0, 1.5])
+    # combined = accuracies["model 1"] + accuracies["model 2"] + accuracies["model 3"]
+    # avg_val = sum(combined) / len(combined)
+    # print("Average validation accuracy: " + str(avg_val))
+    #
+    # test_acc = []
+    # for model in models:
+    #     test_acc += fit_predict(test_data, model, matrices)
+    # avg_test = sum(test_acc) / len(test_acc)
+    # print("Average test accuracy: " + str(avg_test))
 
 
 if __name__ == "__main__":
