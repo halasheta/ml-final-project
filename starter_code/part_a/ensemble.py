@@ -93,7 +93,12 @@ def main():
     datasets = perform_bagging(train_data, 10)
     matrices = sparse_matrix_convert(datasets)
 
-    models, accuracies = generate_models(val_data, matrices, ks=[9, 11, 21])
+    models, accuracies = generate_models(val_data, matrices, ks=[7, 9, 11])
+    # 9, 11, 13 resulted in .652
+    # 10, 11, 12 resulted in .653
+    # 11, 12, 13 resulted in .654
+    # 7, 9, 11 resulted in .658
+    # 11, 11, 11, .655
     combined = accuracies["model 1"] + accuracies["model 2"] + accuracies["model 3"]
     avg_val = sum(combined) / len(combined)
     print("Average validation accuracy: " + str(avg_val))
