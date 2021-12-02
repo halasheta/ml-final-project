@@ -4,6 +4,7 @@ from sklearn.impute import KNNImputer
 
 from starter_code.utils import *
 import numpy as np
+import ast
 
 
 def load_data(path):
@@ -57,11 +58,36 @@ def sparse_matrix_convert(datasets):
     return matrices
 
 
-def dist(x, y):
+def load_meta(path):
+    """
+
+    """
+    if not os.path.exists(path):
+        raise Exception("The specified path {} does not exist.".format(path))
+
+    data = {}
+    with open(path, "r") as csv_file:
+        reader = csv.reader(csv_file)
+        for row in reader:
+            try:
+                subjects = ast.literal_eval(row[1])
+                avg = np.mean(np.array(subjects))
+                data[int(row[0])] = (subjects, avg)
+            except ValueError:
+                # Pass first row.
+                pass
+            except IndexError:
+                # is_correct might not be available.
+                pass
+    return data
+
+
+def dist(x, y, **kwargs):
     """
     Custom distance function for KNNImputer.
     """
-    return np.sum(x-y)
+    print(np.sum(x - y) / len(x))
+    return np.sum(x - y) / len(x)
 
 
 def generate_models(valid_data, sparse_matrices, ks):
@@ -71,7 +97,7 @@ def generate_models(valid_data, sparse_matrices, ks):
     models_acc = {'model 1': [], 'model 2': [], 'model 3': []}
     models = []
     for i in range(len(ks)):
-        m = KNNImputer(n_neighbors=ks[i], metric='pyfunc', func=dist)
+        m = KNNImputer(n_neighbors=ks[i], metric=dist)
         models.append(m)
         models_acc['model {}'.format(i + 1)] = fit_predict(valid_data, m, sparse_matrices)
     return models, models_acc
@@ -83,18 +109,35 @@ def fit_predict(data, model, sparse_matrices):
     """
     accuracies = []
     for mat in sparse_matrices:
-        predictions = model.fit_transform(mat)
-        accuracies.append(sparse_matrix_evaluate(data, predictions))
+        predictions = model.fit_transform(mat.T)
+        accuracies.append(evaluate(data, predictions))
 
     return accuracies
 
 
+def evaluate(data, mat):
+    total_prediction = 0
+    total_accurate = 0
+    for i in range(len(data["is_correct"])):
+        cur_user_id = data["user_id"][i]
+        cur_question_id = data["question_id"][i]
+        if mat[cur_question_id, cur_user_id] >= 0.5 and data["is_correct"][i]:
+            total_accurate += 1
+        if mat[cur_question_id, cur_user_id] < 0.5 and not data["is_correct"][i]:
+            total_accurate += 1
+        total_prediction += 1
+    return total_accurate / float(total_prediction)
+
+
 def main():
-    train_path = os.path.join("../data", "train_data.csv")
+    train_path = os.path.join("./data", "train_data.csv")
+    meta_path = os.path.join("./data", "question_meta.csv")
+
+    print('meta:', load_meta(meta_path))
 
     train_data = load_data(train_path)
-    val_data = load_valid_csv("../data")
-    test_data = load_public_test_csv("../data")
+    val_data = load_valid_csv("./data")
+    test_data = load_public_test_csv("./data")
 
     datasets = perform_bagging(train_data, 10)
     matrices = sparse_matrix_convert(datasets)
