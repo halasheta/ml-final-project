@@ -33,59 +33,15 @@ def neg_log_likelihood(data, theta, beta):
     # TODO:                                                             #
     # Implement the function as described in the docstring.             #
     #####################################################################
-    # s = 0
-    # for i in range(N):
-    #     for j in range(D):
-    #         if data["is_correct"][i] == 1:
-    #             s += theta[i] - np.log(np.exp(theta[i]) + np.exp(beta[j]))
-    #     print(s)
-    # log_lklihood = s[0]
-
-    # vec = np.zeros((N, 1))
-    # for i in range(N):
-    #     vec[i] = np.sum(np.log(np.exp(theta[i]) + np.exp(beta)))
-
-    # log_lklihood = np.sum(D * theta - vec)
-
-    N, D = theta.shape[0], beta.shape[0]
+    N = len(data["is_correct"])
 
     vec = np.zeros((N, 1))
     for i in range(N):
-        theta_i = np.tile(theta[i], (D, 1))
-        term1 = data["is_correct"][i] * (theta_i - beta)
-        term2 = np.logaddexp(0, theta_i - beta)
-        vec[i] = np.sum(term1 - term2)
+        term_1 = data["is_correct"][i] * (theta[data["user_id"][i]] - beta[data["question_id"][i]])
+        term_2 = np.logaddexp(0, theta[data["user_id"][i]] - beta[data["question_id"][i]])
+        vec[i] = term_1 - term_2
 
     log_lklihood = np.sum(vec)
-
-    
-        # if data["is_correct"][i] == 1:
-        # vec[i] = np.sum(np.log(stable_sigmoid(theta_i - beta)))
-        # vec[i] = np.sum(theta_i) - np.sum(np.log(np.exp(theta_i) + np.exp(beta)))
-        # vec[i] = np.sum(theta_i - np.logaddexp(theta_i, beta))
-        #    vec[i] = np.sum(np.logaddexp(0, beta - theta_i))
-        # elif data["is_correct"][i] == 0:
-        # vec[i] = np.sum(np.log(1 - stable_sigmoid(theta_i - beta)))
-        # vec[i] = np.sum(theta_i) - np.sum(np.log(np.exp(theta_i) + np.exp(beta)))
-        # vec[i] = np.sum(beta - np.logaddexp(theta_i, beta))
-        #   vec[i] = np.sum(-1 * np.logaddexp(0, theta_i - beta))
-
-    # is_correct = np.array(data['is_correct']).reshape(-1, 1)
-    # theta_vect = is_correct * theta
-    # beta_vect = is_correct * beta
-
-    # theta_matrix = np.tile(theta, (D, 1))
-    # beta_matrix = np.tile(beta, (D, 1))
-    #
-    # print(theta_matrix.shape)
-    # print(beta_matrix.shape)
-    #
-    # term2 = np.sum(np.log(np.exp(theta_matrix.T) + np.exp(beta_matrix)), axis=0)
-    # print(term2.shape)
-    # # log_likelihood_matrix = theta_matrix - term2
-    # print(theta_matrix.shape)
-    # print(theta_matrix)
-
     #####################################################################
     #                       END OF YOUR CODE                            #
     #####################################################################
@@ -113,67 +69,21 @@ def update_theta_beta(data, lr, theta, beta):
     # TODO:                                                             #
     # Implement the function as described in the docstring.             #
     #####################################################################
-    # num_iterations = 1
-    N, D = theta.shape[0], beta.shape[0]
+    N = len(data["is_correct"])
 
-    dL_dtheta = np.zeros((N, 1))
+    dL_dtheta = np.zeros((542, 1))
     for i in range(N):
-        theta_i = np.tile(theta[i], (D, 1))
-        dL_dtheta[i] = np.nan_to_num(np.sum(data["is_correct"][i] - stable_sigmoid(theta_i - beta)))
-    theta = theta + (lr * dL_dtheta)
+        dL_dtheta[data["user_id"][i]] += data["is_correct"][i] - \
+                                      sigmoid(theta[data["user_id"][i]] - beta[data["question_id"][i]])
 
-    dL_dbeta = np.zeros((D, 1))
-    for j in range(D):
-        beta_j = np.tile(beta[j], (N, 1))
-        dL_dbeta[j] = np.nan_to_num(np.sum(-1 * data["is_correct"][j] + stable_sigmoid(theta - beta_j)))
+    theta += lr * dL_dtheta
 
-    beta = beta + (lr * dL_dbeta)
+    dL_dbeta = np.zeros((1774, 1))
+    for i in range(N):
+        dL_dbeta[data["question_id"][i]] += -1 * data["is_correct"][i] + \
+                                      sigmoid(theta[data["user_id"][i]] - beta[data["question_id"][i]])
 
-    # for i in range(N):
-    #     theta_i = np.tile(theta[i], (D, 1))
-    #     if data["is_correct"][i] == 1:
-    #         dL_dtheta[i] = np.nan_to_num(np.sum(stable_sigmoid(beta - theta_i)))
-    #     elif data["is_correct"][i] == 0:
-    #         dL_dtheta[i] = - np.nan_to_num(
-    #             np.sum(stable_sigmoid(theta_i - beta)))
-
-
-
-    # for j in range(D):
-    #     beta_j = np.tile(beta[j], (N, 1))
-    #     if data["is_correct"][j] == 1:
-    #         dL_dbeta[j] = - np.nan_to_num(
-    #             np.sum(stable_sigmoid(beta_j - theta)))
-    #
-    #     elif data["is_correct"][j] == 0:
-    #     dL_dbeta[j] = np.nan_to_num(np.sum(stable_sigmoid(theta - beta_j)))
-
-
-
-    # dL_dtheta[i] = np.sum(1 - stable_sigmoid(theta_i - beta))
-    # term1 = np.exp(beta + const)
-    # term2 = np.logaddexp(theta_i, beta) + const
-    # term3 = (np.exp(term2) + const)
-    # quotient_sum = np.sum(term1 / term3)
-    # dL_dtheta[i] = quotient_sum
-    # dL_dtheta[i] = np.sum(np.exp(beta + const) / (np.exp(np.logaddexp(theta_i, beta) + const) + const))
-
-    # dL_dtheta[i] = np.sum(- stable_sigmoid(theta_i - beta))
-    # term1 = np.exp(theta_i + const)
-    # term2 = np.logaddexp(theta_i, beta) + const
-    # term3 = (np.exp(term2) + const)
-    # quotient_sum = - np.sum(term1 / term3)
-    # dL_dtheta[i] = quotient_sum
-    # dL_dtheta[i] = - np.sum(np.exp(theta_i + const) / (np.exp(np.logaddexp(theta_i, beta) + const) + const))
-
-    # dL_dbeta[j] = np.sum(stable_sigmoid(theta - beta_j) - 1)
-    # dL_dbeta[j] = np.sum(- np.exp(beta_j) / (np.exp(theta) + np.exp(beta_j)))
-    # dL_dbeta[j] = np.sum(- np.exp(beta_j + const) / (np.exp(np.logaddexp(theta, beta_j) + const) + const))
-
-    # dL_dbeta[j] = np.sum(stable_sigmoid(theta - beta_j))
-
-    # dL_dbeta[j] = np.sum(- np.exp(beta_j) / (np.exp(theta) + np.exp(beta_j)))
-    # dL_dbeta[j] = np.sum(np.exp(theta + const) / (np.exp(np.logaddexp(theta, beta_j) + const) + const))
+    beta += lr * dL_dbeta
 
     #####################################################################
     #                       END OF YOUR CODE                            #
@@ -196,9 +106,9 @@ def irt(data, val_data, lr, iterations):
     """
     # TODO: Initialize theta and beta.
     theta = np.random.uniform(low=0, high=1,
-                              size=(len((data["user_id"])), 1))
+                              size=(542, 1))
     beta = np.random.uniform(low=0, high=1,
-                             size=(len((data["question_id"])), 1))
+                             size=(1774, 1))
 
     val_acc_lst = []
 
@@ -208,7 +118,8 @@ def irt(data, val_data, lr, iterations):
         val_acc_lst.append(score)
         print("NLLK: {} \t Score: {}".format(neg_lld, score))
         theta, beta = update_theta_beta(data, lr, theta, beta)
-        print(theta, beta)
+        print('theta: ', theta)
+        print('beta: ', beta)
 
     # TODO: You may change the return values to achieve what you want.
     return theta, beta, val_acc_lst
@@ -227,8 +138,8 @@ def evaluate(data, theta, beta):
     for i, q in enumerate(data["question_id"]):
         u = data["user_id"][i]
         x = (theta[u] - beta[q]).sum()
-        # p_a = sigmoid(x)
-        p_a = stable_sigmoid(x)
+        p_a = sigmoid(x)
+        # p_a = stable_sigmoid(x)
         pred.append(p_a >= 0.5)
     return np.sum((data["is_correct"] == np.array(pred))) \
            / len(data["is_correct"])
@@ -242,8 +153,8 @@ def main():
     test_data = load_public_test_csv("../data")
 
     print('irt:')
-    print(irt(train_data, val_data, lr=0.0125, iterations=10))
-    # print(neg_log_likelihood(train_data, theta, beta))
+    print(irt(train_data, val_data, lr=0.01, iterations=20))
+    # print(neg_log_likelihood(train_data, tta, beta))
 
     #####################################################################
     # TODO:                                                             #
