@@ -41,9 +41,10 @@ def perform_bagging(data, m):
 
 def sparse_matrix_convert(datasets):
     """
-    Returns a list of sparse matrices for each dataset.
+    Returns a list of tuples holding the sparse matrix and data for each dataset.
     """
     matrices = []
+    # for each sampled dataset, create a sparse matrix
     for ds in datasets:
         data = {"user_id": [], "question_id": [], "is_correct": []}
         for tup in ds:
@@ -61,6 +62,8 @@ def sparse_matrix_convert(datasets):
 
 def load_meta(path):
     """
+    Returns a dict mapping questions to the average of their subject_id and
+    a dict mapping averages to a list of question ids with those averages.
     """
     if not os.path.exists(path):
         raise Exception("The specified path {} does not exist.".format(path))
@@ -86,23 +89,38 @@ def load_meta(path):
     return ques_data, avg_data
 
 
-def sort_by_avgs(avg_data, sparse_mat, train_data):
+def sort_by_avg(train_data, avg_data, sparse_mat):
+    """
+    Returns a sparse matrix, where the question entries are sorted by the average of the sum of their
+    subjects in ascending order, and a list of the question ids sorted in ascending order by their average.
+    """
     sorted_avgs = sorted(avg_data)
-    sorted_ques = []
-    sorted_labels = []
+    sorted_ques, sorted_sample_ques = [], []
+
+    # sort the questions by average
     for avg in sorted_avgs:
         sorted_ques += avg_data[avg]
+
     sorted_mat = np.empty(sparse_mat.shape)
     for i in range(len(sparse_mat)):
+        # sort the sparse matrix by the order in sorted_ques
         sorted_mat[i] = sparse_mat[sorted_ques[i]]
-        sorted_labels.append(train_data["is_correct"])
+
+        # append the relevant label to sorted_labels
+
     return sorted_mat, sorted_ques
+
+
+# def custom_weights(arr):
+#     w = np.random.uniform(low=0, high=1, size=arr.shape)
+#     return w * arr
 
 
 def dist(x, y, **kwargs):
     """
     Custom distance function for KNNImputer.
     """
+
     return np.sum(x - y) / len(x)
 
 
@@ -118,29 +136,35 @@ def dist(x, y, **kwargs):
 #         models_acc['model {}'.format(i + 1)] = fit_predict(valid_data, m, sparse_matrices)
 #     return models, models_acc
 
-def generate_models(valid_data, sparse_matrices, rads):
+
+def generate_models(train_data, valid_data, avg_data, sparse_matrices, ks):
     """
     Train and fit data for the three different models. Return their accuracies.
     """
     models_acc = {'model 1': [], 'model 2': [], 'model 3': []}
     models = []
-    for i in range(len(rads)):
-        m = RadiusNeighborsClassifier(radius=rads[i])
+
+    sorted_dataset = []
+    # sort the matrices
+    for mat in sparse_matrices:
+        sorted_dataset.append(sort_by_avg(train_data, avg_data, mat))
+
+    for i in range(len(ks)):
+        # m = RadiusNeighborsClassifier(radius=rads[i])
+        m = KNNImputer(n_neighbors=ks[i])
         models.append(m)
-        models_acc['model {}'.format(i + 1)] = fit_predict(valid_data, m, sparse_matrices)
+        models_acc['model {}'.format(i + 1)] = fit_predict(valid_data, m, sorted_dataset)
     return models, models_acc
 
 
-def fit_predict(data, model, sparse_matrices, avg_data):
+def fit_predict(val_data, model, sorted_dataset):
     """
     Fit and predict the given data and return the accuracies.
     """
     accuracies = []
-    for mat in sparse_matrices:
-        sorted_mat = sort_by_avgs(avg_data, mat)[0]
-        model.fit(sorted_mat, )
-        predictions = model.predict(mat)
-        accuracies.append(evaluate(data, predictions))
+    for mat, ques in sorted_dataset:
+        predictions = model.fit_transform(mat)
+        # accuracies.append(evaluate(val_data, predictions, ques))
 
     return accuracies
 
@@ -163,25 +187,16 @@ def main():
     train_path = os.path.join("./data", "train_data.csv")
     meta_path = os.path.join("./data", "question_meta.csv")
 
-    # train_data = load_data(train_path)
-    train_data = load_train_csv("./data")
+    train_data = load_data(train_path)
+    ques_data, avg_data = load_meta(meta_path)
+    # train_data = load_train_csv("./data")
     val_data = load_valid_csv("./data")
     test_data = load_public_test_csv("./data")
-    print('train_data:', train_data)
 
-    # datasets = perform_bagging(train_data, 10)
-    # matrices = sparse_matrix_convert(datasets)
-    #
-    # ques_data, avg_data = load_meta(meta_path)
-    # print('ques:', ques_data)
-    # print('avg_data:', avg_data)
-    # org_mat = matrices[0]
-    # sorted_mat, sorted_ques = sort_by_avgs(avg_data, org_mat)
-    # print('sort matrix:', sorted_mat)
-    # print('org_matrix:', org_mat)
-    # # print('sorted ques:', sorted_ques)
-    #
-    # models, accuracies = generate_models(val_data, matrices, rads=[0.5, 1.0, 1.5])
+    datasets = perform_bagging(train_data, 10)
+    matrices = sparse_matrix_convert(datasets)
+
+    models, accuracies = generate_models(train_data, val_data, avg_data, matrices, ks=[7, 9, 11])
     # combined = accuracies["model 1"] + accuracies["model 2"] + accuracies["model 3"]
     # avg_val = sum(combined) / len(combined)
     # print("Average validation accuracy: " + str(avg_val))
