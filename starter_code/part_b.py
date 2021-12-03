@@ -1,4 +1,6 @@
 import math
+import json
+from random import random
 
 from sklearn.impute import KNNImputer
 from sklearn.neighbors import RadiusNeighborsClassifier
@@ -111,50 +113,67 @@ def sort_by_avg(train_data, avg_data, sparse_mat):
     return sorted_mat, sorted_ques
 
 
-# def custom_weights(arr):
-#     w = np.random.uniform(low=0, high=1, size=arr.shape)
-#     return w * arr
+def write_to_file(sparse_mat, ques_data):
+    """
+    Writes a dictionary into file that maps each sample to a list of averages
+
+    *Parameters*
+    sparse_mat: a matrix of question by user
+    avg_data: a dictionary mapping each question_id to the average of the sum of its subject ids
+    """
+    # TODO: DONT PASS IN SORTED SPARSE MATRICES
+    file_dict = {}
+    for i in range(len(sparse_mat)):
+        sparse_vec = str(sparse_mat[i]).replace('\n', '')
+        if sparse_vec not in file_dict.keys():
+            file_dict[sparse_vec] = []
+        file_dict[sparse_vec].append(ques_data[i])
+
+    # write to file
+    with open('distances.txt', 'w') as file:
+        file.write(json.dumps(file_dict))
 
 
 def dist(x, y, **kwargs):
     """
     Custom distance function for KNNImputer.
     """
+    with open('distances.txt', 'r') as file:
+        file_str = file.read()
+        file_dict = json.loads(file_str)
 
-    return np.sum(x - y) / len(x)
+    lst_x = file_dict[str(x).replace('\n', '')]
+    lst_y = file_dict[str(y).replace('\n', '')]
+    avg_x = lst_x[0]
+    avg_y = lst_y[0]
+
+    return abs(avg_x - avg_y)
 
 
-# def generate_models(valid_data, sparse_matrices, ks):
+# def generate_models(train_data, valid_data, avg_data, sparse_matrices, ks):
 #     """
 #     Train and fit data for the three different models. Return their accuracies.
 #     """
 #     models_acc = {'model 1': [], 'model 2': [], 'model 3': []}
 #     models = []
+#
+#     sorted_dataset = []
+#     # sort the matrices
+#     for mat in sparse_matrices:
+#         sorted_dataset.append(sort_by_avg(train_data, avg_data, mat))
+#
 #     for i in range(len(ks)):
-#         m = KNNImputer(n_neighbors=ks[i], metric=dist)
+#         # m = RadiusNeighborsClassifier(radius=rads[i])
+#         m = KNNImputer(n_neighbors=ks[i])
 #         models.append(m)
-#         models_acc['model {}'.format(i + 1)] = fit_predict(valid_data, m, sparse_matrices)
+#         models_acc['model {}'.format(i + 1)] = fit_predict(valid_data, m, sorted_dataset)
 #     return models, models_acc
 
 
 def generate_models(train_data, valid_data, avg_data, sparse_matrices, ks):
     """
-    Train and fit data for the three different models. Return their accuracies.
-    """
-    models_acc = {'model 1': [], 'model 2': [], 'model 3': []}
-    models = []
-
-    sorted_dataset = []
-    # sort the matrices
-    for mat in sparse_matrices:
-        sorted_dataset.append(sort_by_avg(train_data, avg_data, mat))
-
-    for i in range(len(ks)):
-        # m = RadiusNeighborsClassifier(radius=rads[i])
-        m = KNNImputer(n_neighbors=ks[i])
-        models.append(m)
-        models_acc['model {}'.format(i + 1)] = fit_predict(valid_data, m, sorted_dataset)
-    return models, models_acc
+       Train and fit data for the three different models. Return their accuracies.
+       """
 
 
 def fit_predict(val_data, model, sorted_dataset):
@@ -164,23 +183,38 @@ def fit_predict(val_data, model, sorted_dataset):
     accuracies = []
     for mat, ques in sorted_dataset:
         predictions = model.fit_transform(mat)
-        # accuracies.append(evaluate(val_data, predictions, ques))
+        print(predictions)
+        accuracies.append(evaluate(val_data, predictions, ques))
 
     return accuracies
 
 
-def evaluate(val_data, mat, sorted_ques, threshold=0.5):
+def evaluate(valid_data, mat):
     total_prediction = 0
     total_accurate = 0
-    for i in range(len(val_data["is_correct"])):
-        cur_user_id = val_data["user_id"][i]
-        cur_question_id = sorted_ques[i]
-        if mat[cur_question_id, cur_user_id] >= threshold and val_data["is_correct"][i]:
+    for i in range(len(valid_data["is_correct"])):
+        cur_user_id = valid_data["user_id"][i]
+        cur_question_id = valid_data["question_id"][i]
+        if mat[cur_question_id, cur_user_id] >= 0.5 and valid_data["is_correct"][i]:
             total_accurate += 1
-        if mat[cur_question_id, cur_user_id] < threshold and not val_data["is_correct"][i]:
+        if mat[cur_question_id, cur_user_id] < 0.5 and not valid_data["is_correct"][i]:
             total_accurate += 1
         total_prediction += 1
     return total_accurate / float(total_prediction)
+
+
+# def evaluate(val_data, mat, sorted_ques, threshold=0.5):
+#     total_prediction = 0
+#     total_accurate = 0
+#     for i in range(len(val_data["is_correct"])):
+#         cur_user_id = val_data["user_id"][i]
+#         cur_question_id = sorted_ques[i]
+#         if mat[cur_question_id, cur_user_id] >= threshold and val_data["is_correct"][i]:
+#             total_accurate += 1
+#         if mat[cur_question_id, cur_user_id] < threshold and not val_data["is_correct"][i]:
+#             total_accurate += 1
+#         total_prediction += 1
+#     return total_accurate / float(total_prediction)
 
 
 def main():
@@ -196,7 +230,14 @@ def main():
     datasets = perform_bagging(train_data, 10)
     matrices = sparse_matrix_convert(datasets)
 
-    models, accuracies = generate_models(train_data, val_data, avg_data, matrices, ks=[7, 9, 11])
+    write_to_file(matrices[0], ques_data)
+    print('written')
+    m1 = KNNImputer(n_neighbors=19, metric=dist)
+    predictions = m1.fit_transform(matrices[0])
+    print('predicted: ', predictions)
+    print(evaluate(val_data, predictions))
+    # models, accuracies = generate_models(train_data, val_data, avg_data, matrices, ks=[19, 21, 23])
+
     # combined = accuracies["model 1"] + accuracies["model 2"] + accuracies["model 3"]
     # avg_val = sum(combined) / len(combined)
     # print("Average validation accuracy: " + str(avg_val))
