@@ -113,6 +113,9 @@ def sort_by_avg(train_data, avg_data, sparse_mat):
     return sorted_mat, sorted_ques
 
 
+file_dict = {}
+
+
 def write_to_file(sparse_mat, ques_data):
     """
     Writes a dictionary into file that maps each sample to a list of averages
@@ -122,28 +125,30 @@ def write_to_file(sparse_mat, ques_data):
     avg_data: a dictionary mapping each question_id to the average of the sum of its subject ids
     """
     # TODO: DONT PASS IN SORTED SPARSE MATRICES
-    file_dict = {}
+    global file_dict
+    # file_dict = {}
     for i in range(len(sparse_mat)):
-        sparse_vec = str(sparse_mat[i]).replace('\n', '')
+        sparse_vec = str(sparse_mat[i])
+
         if sparse_vec not in file_dict.keys():
             file_dict[sparse_vec] = []
         file_dict[sparse_vec].append(ques_data[i])
 
     # write to file
-    with open('distances.txt', 'w') as file:
-        file.write(json.dumps(file_dict))
+    # with open('distances.txt', 'w') as file:
+    #     file.write(json.dumps(file_dict))
 
 
 def dist(x, y, **kwargs):
     """
     Custom distance function for KNNImputer.
     """
-    with open('distances.txt', 'r') as file:
-        file_str = file.read()
-        file_dict = json.loads(file_str)
+    # with open('distances.txt', 'r') as file:
+    #     file_str = file.read()
+    #     file_dict = json.loads(file_str)
 
-    lst_x = file_dict[str(x).replace('\n', '')]
-    lst_y = file_dict[str(y).replace('\n', '')]
+    lst_x = file_dict[str(x)]
+    lst_y = file_dict[str(y)]
     avg_x = lst_x[0]
     avg_y = lst_y[0]
 
@@ -233,6 +238,7 @@ def main():
     write_to_file(matrices[0], ques_data)
     print('written')
     m1 = KNNImputer(n_neighbors=19, metric=dist)
+    print('created model')
     predictions = m1.fit_transform(matrices[0])
     print('predicted: ', predictions)
     print(evaluate(val_data, predictions))
