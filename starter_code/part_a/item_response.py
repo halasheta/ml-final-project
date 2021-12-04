@@ -1,7 +1,5 @@
-from matplotlib import pyplot as plt
-
 from starter_code.utils import *
-
+from matplotlib import pyplot as plt
 import numpy as np
 
 
@@ -23,15 +21,16 @@ def neg_log_likelihood(data, theta, beta):
     :return: float
     """
     #####################################################################
-    # TODO:                                                             #
     # Implement the function as described in the docstring.             #
     #####################################################################
     N = len(data["is_correct"])
 
     vec = np.zeros((N, 1))
     for i in range(N):
-        term_1 = data["is_correct"][i] * (theta[data["user_id"][i]] - beta[data["question_id"][i]])
-        term_2 = np.logaddexp(0, theta[data["user_id"][i]] - beta[data["question_id"][i]])
+        term_1 = data["is_correct"][i] * (theta[data["user_id"][i]] -
+                                          beta[data["question_id"][i]])
+        term_2 = np.logaddexp(0, theta[data["user_id"][i]] -
+                              beta[data["question_id"][i]])
         vec[i] = term_1 - term_2
 
     log_lklihood = np.sum(vec)
@@ -59,7 +58,6 @@ def update_theta_beta(data, lr, theta, beta):
     :return: tuple of vectors
     """
     #####################################################################
-    # TODO:                                                             #
     # Implement the function as described in the docstring.             #
     #####################################################################
     N = len(data["is_correct"])
@@ -67,14 +65,17 @@ def update_theta_beta(data, lr, theta, beta):
     dL_dtheta = np.zeros((542, 1))
     for i in range(N):
         dL_dtheta[data["user_id"][i]] += data["is_correct"][i] - \
-                                         sigmoid(theta[data["user_id"][i]] - beta[data["question_id"][i]])
+                                         sigmoid(theta[data["user_id"][i]] -
+                                                 beta[data["question_id"][i]])
 
     theta += lr * dL_dtheta
 
     dL_dbeta = np.zeros((1774, 1))
     for i in range(N):
         dL_dbeta[data["question_id"][i]] += -1 * data["is_correct"][i] + \
-                                            sigmoid(theta[data["user_id"][i]] - beta[data["question_id"][i]])
+                                            sigmoid(theta[data["user_id"][i]] -
+                                                    beta[data["question_id"][i]]
+                                                    )
 
     beta += lr * dL_dbeta
     #####################################################################
@@ -140,29 +141,35 @@ def main():
     test_data = load_public_test_csv("../data")
 
     #####################################################################
-    # TODO:                                                             #
+
     # Tune learning rate and number of iterations. With the implemented #
     # code, report the validation and test accuracy.                    #
     #####################################################################
-    val_theta, val_beta, val_acc_lst = irt(train_data, val_data, lr=0.01, iterations=15)
-    test_theta, test_beta, test_acc_lst = irt(train_data, test_data, lr=0.01, iterations=15)
+    val_theta, val_beta, val_acc_lst = irt(train_data, val_data, lr=0.01,
+                                           iterations=15)
+    test_theta, test_beta, test_acc_lst = irt(train_data, test_data, lr=0.01,
+                                              iterations=15)
 
     print('Validation Accuracy: ', val_acc_lst)
     print('Test Accuracy: ', test_acc_lst)
 
-    # plotting the training and validation log-likelihoods as a function of iteration
+    # plotting the training and validation log-likelihoods as a function of
+    # iteration
 
     train_theta, v_theta = np.random.uniform(low=0, high=1, size=(542, 1)), \
-                             np.random.uniform(low=0, high=1, size=(542, 1))
+                           np.random.uniform(low=0, high=1, size=(542, 1))
     train_beta, v_beta = np.random.uniform(low=0, high=1, size=(1774, 1)), \
-                           np.random.uniform(low=0, high=1, size=(1774, 1))
+                         np.random.uniform(low=0, high=1, size=(1774, 1))
 
     train_nllk, val_nllk = [], []
     itr = [i for i in range(15)]
     for i in range(15):
-        train_nllk.append(neg_log_likelihood(train_data, theta=train_theta, beta=train_beta))
-        val_nllk.append(neg_log_likelihood(val_data, theta=v_theta, beta=v_beta))
-        train_theta, train_beta = update_theta_beta(train_data, 0.01, train_theta, train_beta)
+        train_nllk.append(
+            neg_log_likelihood(train_data, theta=train_theta, beta=train_beta))
+        val_nllk.append(
+            neg_log_likelihood(val_data, theta=v_theta, beta=v_beta))
+        train_theta, train_beta = update_theta_beta(train_data, 0.01,
+                                                    train_theta, train_beta)
         v_theta, v_beta = update_theta_beta(val_data, 0.01, v_theta, v_beta)
 
     fig = plt.figure()
@@ -179,7 +186,7 @@ def main():
     #####################################################################
 
     #####################################################################
-    # TODO:                                                             #
+
     questions = [358, 7, 1720]
     prob_dict = {358: [[], []], 7: [[], []], 1720: [[], []]}
 
@@ -196,9 +203,11 @@ def main():
     plt.ylabel('Probability')
     plt.title('Probability of Correct Response vs Theta Given a Question j')
 
-    plt.scatter(prob_dict[358][0], prob_dict[358][1], color='orange', label='j1 = 358')
+    plt.scatter(prob_dict[358][0], prob_dict[358][1], color='orange',
+                label='j1 = 358')
     plt.scatter(prob_dict[7][0], prob_dict[7][1], color='green', label='j2 = 7')
-    plt.scatter(prob_dict[1720][0], prob_dict[1720][1], color='blue', label='j3 = 1720')
+    plt.scatter(prob_dict[1720][0], prob_dict[1720][1], color='blue',
+                label='j3 = 1720')
     plt.legend(title='Legend')
     # fig.savefig("q2_d.png")
     plt.show()

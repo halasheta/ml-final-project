@@ -8,6 +8,9 @@ import numpy as np
 
 
 def load_data(path):
+    """
+    Loads the training samples as tuples of (question_id, user_id, is_correct).
+    """
     if not os.path.exists(path):
         raise Exception("The specified path {} does not exist.".format(path))
 
@@ -73,7 +76,7 @@ def generate_models(valid_data, sparse_matrices, ks):
 
 def fit_predict(data, model, sparse_matrices):
     """
-    Fit and predict the given data and return the accuracies.
+    Fit and predict each matrix using model and evaluate based on data.
     """
     accuracies = []
     for mat in sparse_matrices:
@@ -94,12 +97,9 @@ def main():
     matrices = sparse_matrix_convert(datasets)
 
     models, accuracies = generate_models(val_data, matrices, ks=[7, 9, 11])
-    # 9, 11, 13 resulted in .652
-    # 10, 11, 12 resulted in .653
-    # 11, 12, 13 resulted in .654
-    # 7, 9, 11 resulted in .658
-    # 11, 11, 11, .655
-    combined = accuracies["model 1"] + accuracies["model 2"] + accuracies["model 3"]
+    combined = accuracies["model 1"] \
+               + accuracies["model 2"] \
+               + accuracies["model 3"]
     avg_val = sum(combined) / len(combined)
     print("Average validation accuracy: " + str(avg_val))
 

@@ -37,7 +37,6 @@ def knn_impute_by_item(matrix, valid_data, k):
     :return: float
     """
     #####################################################################
-    # TODO:                                                             #
     # Implement the function as described in the docstring.             #
     #####################################################################
     nbrs = KNNImputer(n_neighbors=k)
@@ -78,22 +77,22 @@ def main():
     best_accuracy = 0
     accuracies = []
     for k in ks:
-        # item_acc = knn_impute_by_item(sparse_matrix, val_data, k)
-        user_acc = knn_impute_by_user(sparse_matrix, val_data, k)
-        # accuracies.append(item_acc)
-        accuracies.append(user_acc)
-        # if item_acc > best_accuracy:
-        #     best_accuracy = item_acc
-        #     kstar = k
-        if user_acc > best_accuracy:
-            best_accuracy = user_acc
+        item_acc = knn_impute_by_item(sparse_matrix, val_data, k)
+        # user_acc = knn_impute_by_user(sparse_matrix, val_data, k)
+        accuracies.append(item_acc)
+        # accuracies.append(user_acc)
+        if item_acc > best_accuracy:
+            best_accuracy = item_acc
             kstar = k
+        # if user_acc > best_accuracy:
+        #     best_accuracy = user_acc
+        #     kstar = k
 
     pyplot.plot(ks, accuracies)
     print(kstar, best_accuracy)
-    pyplot.title("A graph showing the accuracy with respect to k")
+    pyplot.title("Original KNN impute_by_item accuracy vs k")
     pyplot.xlabel("k")
-    pyplot.ylabel("Accuracy")
+    pyplot.ylabel("Validation accuracy")
     pyplot.show()
     # pyplot.savefig('user_based.png')
     print("Test accuracy: {}".

@@ -1,6 +1,7 @@
+from matplotlib import pyplot
+
 from starter_code.utils import *
 from scipy.linalg import sqrtm
-from matplotlib import pyplot
 import numpy as np
 
 
@@ -114,7 +115,6 @@ def als(train_data, k, lr, num_iteration):
                           size=(len(set(train_data["question_id"])), k))
 
     #####################################################################
-    # TODO:                                                             #
     # Implement the function as described in the docstring.             #
     #####################################################################
 
@@ -126,10 +126,6 @@ def als(train_data, k, lr, num_iteration):
     #                       END OF YOUR CODE                            #
     #####################################################################
     return mat, u, z
-
-
-# def plot_func(k, iterations, train_data, lr):
-#     # als(train_data, k, lr, iterations)
 
 
 def main():
@@ -185,7 +181,6 @@ def main():
     #####################################################################
 
     #####################################################################
-    # TODO:                                                             #
     # (ALS) Try out at least 5 different k and select the best k        #
     # using the validation set.
     lr = 0.12
@@ -207,13 +202,11 @@ def main():
     pyplot.xlabel("Number of iterations")
     pyplot.ylabel("Validation losses")
     pyplot.show()
-    # print("als:")
-    # print(losses)
-    # print(min(losses), als_k[losses.index(min(losses))])
-    # k_star = als_k[losses.index(min(losses))]
-    # test_als, u, z = als(train_data, k_star, lr, num_iterations)
-    # test_loss = squared_error_loss(test_data, u, z)
-    # print(test_loss)
+
+    k_star = als_k[losses.index(min(losses))]
+    test_als, u, z = als(train_data, k_star, lr, num_iterations)
+    test_loss = squared_error_loss(test_data, u, z)
+    print('Test squared-error loss: ', test_loss)
 
     #####################################################################
     #####################################################################
